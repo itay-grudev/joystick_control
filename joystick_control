@@ -3,6 +3,7 @@
 import sys
 import signal
 import logging
+import argparse
 import threading
 
 from joystick_event_handler import JoystickEventHandler
@@ -23,7 +24,7 @@ class Main:
         self.threads = []
 
         for program in self.programs:
-            thread = threading.Thread( target = program.run )
+            thread = threading.Thread( target=program.run, args=(self.args,) )
             thread.start()
             self.threads.append( [ program, thread ] )
             self.logger.info( 'Loaded %s' % program.__name__ )
@@ -51,7 +52,23 @@ class Main:
         sys.exit( 1 )
 
     def __init__( self ):
-        logging.basicConfig( stream=sys.stdout, level=logging.DEBUG )
+        # Command line arguments
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "-d",
+            "--debug",
+            help="enable full debug information",
+            action="store_true",
+            default=False,
+            dest="debug",
+        )
+        self.args = parser.parse_args()
+
+        if self.args.debug:
+            logging.basicConfig( stream=sys.stdout, level=logging.DEBUG )
+        else:
+            logging.basicConfig( stream=sys.stdout, level=logging.INFO )
+
 
         signal.signal( signal.SIGHUP, self.interrupt_handler )
         signal.signal( signal.SIGINT, self.interrupt_handler )

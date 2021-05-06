@@ -1,7 +1,8 @@
-import os
 import ctypes
 import logging
 from sdl2 import *
+
+from volume_control import VolumeControl
 
 class JoystickEventHandler:
     stop_thread = False
@@ -18,7 +19,7 @@ class JoystickEventHandler:
     }
 
     @classmethod
-    def run( cls ):
+    def run( cls, args ):
         cls.logger.info( 'Starting (%s).' % cls.__name__ )
         while not cls.stop_thread:
             try:
@@ -37,6 +38,7 @@ class JoystickEventHandler:
         SDL_Init( SDL_INIT_JOYSTICK )
         self.axis = {}
         self.button = {}
+        self.volume_control = VolumeControl()
 
     def update( self ):
         event = SDL_Event()
@@ -52,17 +54,20 @@ class JoystickEventHandler:
                 elif event.type == SDL_JOYBUTTONUP:
                     self.button[event.jbutton.button] = False
 
+                if self.logger.level <= logging.DEBUG:
+                    self.logger.debug( "axis: " + str( self.axis ))
+                    self.logger.debug( "button: " + str( self.button ))
+
+    def _sink0( self, event ):
+        pass
+
+    def _sink1( self, event ):
+        pass
+
     def _volume_control( self, event ):
-        os.system( f"amixer -D pulse set Master {self.__translate( event.value, -32768, 32767, 0, 100 )}% 2>&1 1>/dev/null" )
+        self.volume_control.set_volume( self.__normalize( event.value, -32768, 32767 ))
 
+    # Convert the left range into a 0-1 range (float)
     @staticmethod
-    def __translate( value, from_min, from_max, to_min, to_max):
-        # Figure out how 'wide' each range is
-        left_span = from_max - from_min
-        right_span = to_max - to_min
-
-        # Convert the left range into a 0-1 range (float)
-        scaled_value = float( value - from_min ) / float( left_span )
-
-        # Convert the 0-1 range into a value in the right range.
-        return to_min + scaled_value * right_span
+    def __normalize( value, from_min, from_max):
+        return float( value - from_min ) / float( from_max - from_min )
