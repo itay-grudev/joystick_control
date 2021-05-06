@@ -55,6 +55,7 @@ class Main:
 
         signal.signal( signal.SIGHUP, self.interrupt_handler )
         signal.signal( signal.SIGINT, self.interrupt_handler )
+        signal.signal( signal.SIGTERM, self.interrupt_handler )
 
         self.run()
 
