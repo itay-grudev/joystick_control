@@ -15,6 +15,18 @@ class JoystickEventHandler:
                 "max": 32767,
                 "function": "_volume_control",
             }
+        },
+        "buttons": {
+            33: {
+                "press": {
+                    "function": "_sink0",
+                },
+            },
+            34: {
+                "press": {
+                    "function": "_sink1",
+                },
+            },
         }
     }
 
@@ -51,6 +63,9 @@ class JoystickEventHandler:
                         getattr( self, self.MAPPINGS["sliders"][event.jaxis.axis]["function"] )( event.jaxis )
                 elif event.type == SDL_JOYBUTTONDOWN:
                     self.button[event.jbutton.button] = True
+                    if event.jbutton.button in self.MAPPINGS["buttons"]:
+                        if "press" in self.MAPPINGS["buttons"][event.jbutton.button]:
+                            getattr( self, self.MAPPINGS["buttons"][event.jbutton.button]["press"]["function"] )()
                 elif event.type == SDL_JOYBUTTONUP:
                     self.button[event.jbutton.button] = False
 
@@ -58,11 +73,13 @@ class JoystickEventHandler:
                     self.logger.debug( "axis: " + str( self.axis ))
                     self.logger.debug( "button: " + str( self.button ))
 
-    def _sink0( self, event ):
-        pass
+    def _sink0( self ):
+        self.volume_control.set_default_sink( 0 )
+        self.volume_control.move_inputs_to_sink( 0 )
 
-    def _sink1( self, event ):
-        pass
+    def _sink1( self ):
+        self.volume_control.set_default_sink( 1 )
+        self.volume_control.move_inputs_to_sink( 1 )
 
     def _volume_control( self, event ):
         self.volume_control.set_volume( self.__normalize( event.value, -32768, 32767 ))
