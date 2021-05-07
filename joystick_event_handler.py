@@ -11,10 +11,11 @@ class JoystickEventHandler:
     MAPPINGS = {
         "sliders": {
             6: {
-                "min": -32768,
-                "max": 32767,
-                "function": "_volume_control",
-            }
+                "function": "_sink1_volume_control",
+            },
+            7: {
+                "function": "_sink0_volume_control",
+            },
         },
         "buttons": {
             33: {
@@ -83,6 +84,12 @@ class JoystickEventHandler:
 
     def _volume_control( self, event ):
         self.volume_control.set_volume( self.__normalize( event.value, -32768, 32767 ))
+
+    def _sink0_volume_control( self, event ):
+        self.volume_control.set_volume( self.__normalize( event.value, -32768, 32767 ), sink_index = 0 )
+
+    def _sink1_volume_control( self, event ):
+        self.volume_control.set_volume( self.__normalize( event.value, -32768, 32767 ), sink_index = 1 )
 
     # Convert the left range into a 0-1 range (float)
     @staticmethod

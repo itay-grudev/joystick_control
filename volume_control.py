@@ -12,8 +12,12 @@ class VolumeControl:
         for input in self.pulse.sink_input_list():
             self.pulse.sink_input_move( input.index, sink_index )
 
-    def set_volume( self, level ):
-        self.pulse.volume_set_all_chans( self.__default_sink(), level )
+    def set_volume( self, level, sink_index = None ):
+        if sink_index == None:
+            sink = self.__default_sink()
+        else:
+            sink = self.__get_sink_by_index( sink_index )
+        self.pulse.volume_set_all_chans( sink, level )
 
     def __get_sink_by_index( self, index ):
         sink = None
