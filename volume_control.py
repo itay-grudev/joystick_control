@@ -9,8 +9,18 @@ class VolumeControl:
         self.pulse.sink_default_set( self.__get_sink_by_index( sink_index ))
 
     def move_inputs_to_sink( self, sink_index ):
+        # If one sink move fails - don't fail the entire operation
+        # but raise the exception afterwards to assist in debugging
+        exception = None
         for input in self.pulse.sink_input_list():
-            self.pulse.sink_input_move( input.index, sink_index )
+            try:
+                self.pulse.sink_input_move( input.index, sink_index )
+            except pulsectl.pulsectl.PulseOperationFailed as e:
+                exception = e
+        if exception:
+            raise exception
+
+
 
     def set_volume( self, level, sink_index = None ):
         if sink_index == None:
