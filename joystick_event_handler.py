@@ -66,12 +66,12 @@ class JoystickEventHandler:
             trigger_type = 'Button'
             event_type = 'press'
             event_id = event.jbutton.button
-            event_value = True
+            event_value = None
         elif event.type == SDL_JOYBUTTONUP:
             trigger_type = 'Button'
             event_type = 'release'
             event_id = event.jbutton.button
-            event_value = False
+            event_value = None
         elif event.type == SDL_JOYHATMOTION:
             trigger_type = 'HAT'
             event_id = event.jhat.hat
