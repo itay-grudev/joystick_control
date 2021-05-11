@@ -1,3 +1,4 @@
+import yaml
 import ctypes
 import logging
 from sdl2 import *
@@ -11,10 +12,10 @@ class JoystickEventHandler:
     MAPPINGS = {
         "sliders": {
             6: {
-                "function": "_sink1_volume_control",
+                "function": "_sink0_volume_control",
             },
             7: {
-                "function": "_sink0_volume_control",
+                "function": "_sink1_volume_control",
             },
         },
         "buttons": {
@@ -51,6 +52,9 @@ class JoystickEventHandler:
         SDL_Init( SDL_INIT_JOYSTICK )
         self.axis = {}
         self.button = {}
+        self.aliases = yaml.safe_load(
+            open( './conf/joystick_aliases.yaml', 'r' )
+        )
         self.volume_control = VolumeControl()
 
     def update( self ):
@@ -135,16 +139,28 @@ class JoystickEventHandler:
 
         return (device, device_id, event_type, event_id, event_value)
 
+    def _device_alias( self, event_details ):
+        (device, device_id, event_type, event_id, event_value) = event_details
+
+        return self.aliases['%ss' % device ]['%s%s' % (device, device_id) ]['name']
+
+    def _event_alias( self, event_details ):
+        (device, device_id, event_type, event_id, event_value) = event_details
+        try:
+            return self.aliases['%ss' % device ]['%s%s' % (device, device_id) ][ '%ss' % event_type.lower() ][event_id]
+        except (KeyError, TypeError):
+            return '%s%s' % (event_type, event_id)
+
     def _log_event( self, event_values ):
         (device, device_id, event_type, event_id, event_value) = event_values
 
         if event_id != None:
             if event_value != None:
-                self.logger.debug( "%s%s/%s%s = %s" % (device, device_id, event_type, event_id, event_value))
+                self.logger.debug( "%s/%s = %s" % (self._device_alias( event_values ), self._event_alias( event_values ), event_value))
             else:
-                self.logger.debug( "%s%s/%s%s" % (device, device_id, event_type, event_id))
+                self.logger.debug( "%s/%s" % (self._device_alias( event_values ), self._event_alias( event_values )))
         else:
-            self.logger.debug( "%s%s/%s" % (device, device_id, event_type))
+            self.logger.debug( "%s/%s" % (self._device_alias( event_values ), event_type))
 
     def _sink0( self ):
         self.volume_control.set_default_sink( 0 )

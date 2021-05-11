@@ -1,0 +1,76 @@
+
+Joysticks:
+  Joystick0:
+    name: Joystick
+    buttons:
+      0: Trigger
+      1: A
+      2: B
+      3: C
+      4: D
+      5: E
+      6: H1Up
+      7: H1Right
+      8: H1Down
+      9: H1Left
+      10: H2Up
+      11: H2Right
+      12: H2Down
+      13: H2Left
+    sliders:
+      0: Roll
+      1: Pitch
+      2: Cx
+      3: Cy
+      4: Yaw
+    hats:
+      0: POV
+
+  Joystick1:
+    name: Throttle
+    buttons:
+      0: E
+      1: F
+      2: G
+      3: I
+      4: H
+      5: SW1
+      6: SW2
+      7: SW3
+      8: SW4
+      9: SW5
+      10: SW6
+      11: TGL1Up
+      12: TGL1Down
+      13: TGL2Up
+      14: TGL2Down
+      15: TGL3Up
+      16: TGL3Down
+      17: TGL4Up
+      18: TGL4Down
+      19: H3Up
+      20: H3Right
+      21: H3Down
+      22: H3Left
+      23: H4Up
+      24: H4Right
+      25: H4Down
+      26: H4Left
+      27: K1Up
+      28: K1Down
+      29: ScrollUp
+      30: ScrollDown
+      31: J
+      32: SLD
+      33: ModeM1
+      34: ModeM2
+      35: ModeS1
+    sliders:
+      0: Left
+      1: Right
+      2: FSlider
+      3: Jx
+      4: Jy
+      5: GSlider
+      6: Rotary2
+      7: Rotary1
