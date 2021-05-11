@@ -20,8 +20,6 @@ class VolumeControl:
         if exception:
             raise exception
 
-
-
     def set_volume( self, level, sink_index = None ):
         if sink_index == None:
             sink = self.__default_sink()

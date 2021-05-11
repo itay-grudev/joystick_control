@@ -68,9 +68,9 @@ Joysticks:
     sliders:
       0: Left
       1: Right
-      2: FSlider
+      2: FRotary
       3: Jx
       4: Jy
-      5: GSlider
-      6: Rotary2
-      7: Rotary1
+      5: GRotary
+      6: Rotary3
+      7: Rotary4

@@ -1,36 +1,13 @@
-import yaml
 import ctypes
 import logging
 from sdl2 import *
 
-from volume_control import VolumeControl
+from user.mapper import Mapper
+from alias_resolver import AliasResolver
 
 class JoystickEventHandler:
     stop_thread = False
     logger = logging.getLogger( __name__ )
-
-    MAPPINGS = {
-        "sliders": {
-            6: {
-                "function": "_sink0_volume_control",
-            },
-            7: {
-                "function": "_sink1_volume_control",
-            },
-        },
-        "buttons": {
-            33: {
-                "press": {
-                    "function": "_sink0",
-                },
-            },
-            34: {
-                "press": {
-                    "function": "_sink1",
-                },
-            },
-        }
-    }
 
     @classmethod
     def run( cls, args ):
@@ -50,12 +27,7 @@ class JoystickEventHandler:
 
     def __init__( self ):
         SDL_Init( SDL_INIT_JOYSTICK )
-        self.axis = {}
-        self.button = {}
-        self.aliases = yaml.safe_load(
-            open( './conf/joystick_aliases.yaml', 'r' )
-        )
-        self.volume_control = VolumeControl()
+        self.mapper = Mapper()
 
     def update( self ):
         event = SDL_Event()
@@ -63,27 +35,10 @@ class JoystickEventHandler:
             event_details = self._classify_event( event )
             self._log_event( event_details )
 
-            (device, device_id, event_type, event_id, event_value) = event_details
-
-            # Joystick events only for now :(
-            if device != 'Joystick':
-                raise NotImplementedError( 'Unsupported device.' % event.type )
-
             if event.type == SDL_JOYDEVICEADDED:
                 SDL_JoystickOpen( event.jdevice.which )
-
-            elif event.type == SDL_JOYAXISMOTION:
-                self.axis[event_id] = event_value
-                if event_id in self.MAPPINGS["sliders"]:
-                    getattr( self, self.MAPPINGS["sliders"][event_id]["function"] )( event_value )
-            elif event.type == SDL_JOYBUTTONDOWN:
-                self.button[event_id] = True
-                if event_id in self.MAPPINGS["buttons"]:
-                    if "press" in self.MAPPINGS["buttons"][event_id]:
-                        getattr( self, self.MAPPINGS["buttons"][event_id]["press"]["function"] )()
-
-            elif event.type == SDL_JOYBUTTONUP:
-                self.button[event.jbutton.button] = False
+            else:
+                self.mapper.map( event_details )
 
     def _classify_event( self, event ):
         if 0x300 <= event.type < 0x400:
@@ -103,19 +58,22 @@ class JoystickEventHandler:
             device_id = None
 
         if event.type == SDL_JOYAXISMOTION:
-            event_type = 'Slider'
+            trigger_type = 'Slider'
+            event_type = 'change'
             event_id = event.jaxis.axis
             event_value = event.jaxis.value
         elif event.type == SDL_JOYBUTTONDOWN:
-            event_type = 'Button'
+            trigger_type = 'Button'
+            event_type = 'press'
             event_id = event.jbutton.button
             event_value = True
         elif event.type == SDL_JOYBUTTONUP:
-            event_type = 'Button'
+            trigger_type = 'Button'
+            event_type = 'release'
             event_id = event.jbutton.button
             event_value = False
         elif event.type == SDL_JOYHATMOTION:
-            event_type = 'HAT'
+            trigger_type = 'HAT'
             event_id = event.jhat.hat
             event_value = {
                 SDL_HAT_CENTERED: 0,
@@ -128,58 +86,30 @@ class JoystickEventHandler:
                 SDL_HAT_LEFT: 25,
                 SDL_HAT_LEFTUP: 29,
             }[event.jhat.value]
+            if event_value:
+                event_type = 'press'
+            else:
+                event_type = 'release'
         elif event.type == SDL_JOYDEVICEADDED:
-            event_type = 'Connected'
+            trigger_type = 'Connected'
+            event_type = None
             event_id = None
             event_value = None
         else:
-            event_type = '[%s]' % hex(event.type)
+            trigger_type = '[%s]' % hex(event.type)
+            event_type = None
             event_id = None
             event_value = None
 
-        return (device, device_id, event_type, event_id, event_value)
+        return (device, device_id, trigger_type, event_type, event_id, event_value)
 
-    def _device_alias( self, event_details ):
-        (device, device_id, event_type, event_id, event_value) = event_details
-
-        return self.aliases['%ss' % device ]['%s%s' % (device, device_id) ]['name']
-
-    def _event_alias( self, event_details ):
-        (device, device_id, event_type, event_id, event_value) = event_details
-        try:
-            return self.aliases['%ss' % device ]['%s%s' % (device, device_id) ][ '%ss' % event_type.lower() ][event_id]
-        except (KeyError, TypeError):
-            return '%s%s' % (event_type, event_id)
-
-    def _log_event( self, event_values ):
-        (device, device_id, event_type, event_id, event_value) = event_values
+    def _log_event( self, event_details ):
+        (device, device_id, trigger_type, event_type, event_id, event_value) = event_details
 
         if event_id != None:
             if event_value != None:
-                self.logger.debug( "%s/%s = %s" % (self._device_alias( event_values ), self._event_alias( event_values ), event_value))
+                self.logger.debug( "%s = %s" % (AliasResolver.event_alias( event_details ), event_value))
             else:
-                self.logger.debug( "%s/%s" % (self._device_alias( event_values ), self._event_alias( event_values )))
+                self.logger.debug( "%s" % (AliasResolver.event_alias( event_details )))
         else:
-            self.logger.debug( "%s/%s" % (self._device_alias( event_values ), event_type))
-
-    def _sink0( self ):
-        self.volume_control.set_default_sink( 0 )
-        self.volume_control.move_inputs_to_sink( 0 )
-
-    def _sink1( self ):
-        self.volume_control.set_default_sink( 1 )
-        self.volume_control.move_inputs_to_sink( 1 )
-
-    def _volume_control( self, value ):
-        self.volume_control.set_volume( self.__normalize( value, -32768, 32767 ))
-
-    def _sink0_volume_control( self, value ):
-        self.volume_control.set_volume( self.__normalize( value, -32768, 32767 ), sink_index = 0 )
-
-    def _sink1_volume_control( self, value ):
-        self.volume_control.set_volume( self.__normalize( value, -32768, 32767 ), sink_index = 1 )
-
-    # Convert the left range into a 0-1 range (float)
-    @staticmethod
-    def __normalize( value, from_min, from_max):
-        return float( value - from_min ) / float( from_max - from_min )
+            self.logger.debug( "%s/%s" % (AliasResolver.device_name_alias( event_details ), trigger_type))
