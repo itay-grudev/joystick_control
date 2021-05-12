@@ -1,4 +1,5 @@
 import logging
+import subprocess
 
 from volume_control import VolumeControl
 from alias_resolver import AliasResolver
@@ -11,6 +12,8 @@ class Mapper:
         "Throttle/Rotary4#change": "_sink1_volume_control",
         "Throttle/ModeM1#press": "_sink0",
         "Throttle/ModeM2#press": "_sink1",
+        "Throttle/SW5#press": "_lollypop_toggle",
+        "Throttle/SW6#press": "_lollypop_play",
     }
 
     def __init__( self ):
@@ -40,6 +43,12 @@ class Mapper:
     def _sink1_volume_control( self, event_details):
         (device, device_id, trigger_type, event_type, event_id, event_value) = event_details
         self.volume_control.set_volume( self.__normalize( event_value, -32768, 32767 ), sink_index = 1 )
+
+    def _lollypop_play( self, event_details):
+        subprocess.Popen(['lollypop', '--play'] )
+
+    def _lollypop_toggle( self, event_details):
+        subprocess.Popen(['lollypop', '--play-pause'] )
 
     # Convert a value from a specified range to 0-1 range (float)
     @staticmethod
