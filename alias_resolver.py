@@ -1,8 +1,9 @@
+import os
 import yaml
 
 class AliasResolver:
     ALIAS_CONFIG = yaml.safe_load(
-        open( './conf/joystick_aliases.yaml', 'r' )
+        open( os.path.dirname(os.path.realpath(__file__)) + '/conf/joystick_aliases.yaml', 'r' )
     )
 
     @classmethod
