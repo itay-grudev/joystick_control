@@ -7,13 +7,19 @@ from alias_resolver import AliasResolver
 ##
 # Maps events
 class Mapper:
-    SINK_HEADPHONES = 'alsa_output.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00.analog-stereo'
+    # SINK_HEADPHONES = 'alsa_output.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00.analog-stereo'
+    SINK_HEADPHONES = 'alsa_output.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00.stereo-chat'
     SINK_SPEAKERS = 'alsa_output.pci-0000_0b_00.4.analog-stereo'
     MAPPING = {
         "Throttle/Rotary3#change": "_sink_speakers_volume",
         "Throttle/Rotary4#change": "_sink_headphones_volume",
         "Throttle/ModeM1#press": "_sink_headphones",
         "Throttle/ModeM2#press": "_sink_speakers",
+        "Throttle/F#press": "_terminal_open",
+        "Throttle/SW1#release": "_close_slack",
+        "Throttle/SW2#release": "_focus_slack",
+        "Throttle/SW3#release": "_close_gitkraken",
+        "Throttle/SW4#release": "_focus_gitkraken",
         "Throttle/SW5#press": "_lollypop_toggle",
         "Throttle/SW6#press": "_lollypop_play",
     }
@@ -34,7 +40,6 @@ class Mapper:
         self.volume_control.set_default_sink( self.SINK_SPEAKERS )
         self.volume_control.move_inputs_to_sink( self.SINK_SPEAKERS )
 
-
     def __volume_control( self, event_details):
         (device, device_id, trigger_type, event_type, event_id, event_value) = event_details
         self.volume_control.set_volume( self.__normalize( event_value, -32768, 32767 ))
@@ -48,10 +53,26 @@ class Mapper:
         self.volume_control.set_volume( self.__normalize( event_value, -32768, 32767 ), sink = self.SINK_SPEAKERS )
 
     def _lollypop_play( self, event_details):
-        subprocess.Popen(['lollypop', '--play'] )
+        subprocess.Popen(['lollypop'] )
 
     def _lollypop_toggle( self, event_details):
         subprocess.Popen(['lollypop', '--play-pause'] )
+
+    def _terminal_open( self, event_details ):
+        subprocess.Popen(['gnome-terminal'] )
+
+    def _close_slack( self, event_details ):
+        subprocess.Popen(['wmctrl', '-c', 'Slack'])
+
+    def _focus_slack( self, event_details ):
+        subprocess.Popen(['slack'])
+
+    def _close_gitkraken( self, event_details ):
+        subprocess.Popen(['wmctrl', '-c', 'GitKraken'])
+
+    def _focus_gitkraken( self, event_details ):
+        subprocess.Popen(['gitkraken'])
+        subprocess.Popen(['wmctrl', '-R', 'GitKraken'])
 
     # Convert a value from a specified range to 0-1 range (float)
     @staticmethod
