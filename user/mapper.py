@@ -9,9 +9,11 @@ from alias_resolver import AliasResolver
 class Mapper:
     # SINK_HEADPHONES = 'alsa_output.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00.analog-stereo'
     SINK_HEADPHONES = 'alsa_output.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00.stereo-chat'
-    SINK_SPEAKERS = 'alsa_output.pci-0000_0b_00.4.analog-stereo'
+    # SINK_SPEAKERS = 'alsa_output.pci-0000_0b_00.4.analog-stereo'
+    SINK_SPEAKERS = 'alsa_output.usb-0b0e_Jabra_Link_380_50C2ED7D7D89-00.iec958-stereo'
     INPUT_CARDS = [
         'alsa_card.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00',
+        'alsa_card.usb-0b0e_Jabra_Link_380_50C2ED7D7D89-00',
     ]
     MAPPING = {
         "Throttle/Rotary3#change": "_sink_speakers_volume",
@@ -50,15 +52,15 @@ class Mapper:
         self.volume_control.move_inputs_to_sink( self.SINK_SPEAKERS )
 
     def __volume_control( self, event_details):
-        (device, device_id, trigger_type, event_type, event_id, event_value) = event_details
+        (device, device_type, device_id, trigger_type, event_type, event_id, event_value) = event_details
         self.volume_control.set_volume( self.__normalize( event_value, -32768, 32767 ))
 
     def _sink_headphones_volume( self, event_details):
-        (device, device_id, trigger_type, event_type, event_id, event_value) = event_details
+        (device, device_type, device_id, trigger_type, event_type, event_id, event_value) = event_details
         self.volume_control.set_volume( self.__normalize( event_value, -32768, 32767 ), sink = self.SINK_HEADPHONES )
 
     def _sink_speakers_volume( self, event_details):
-        (device, device_id, trigger_type, event_type, event_id, event_value) = event_details
+        (device, device_type, device_id, trigger_type, event_type, event_id, event_value) = event_details
         self.volume_control.set_volume( self.__normalize( event_value, -32768, 32767 ), sink = self.SINK_SPEAKERS )
 
     def _lock_pc( self, event_details ):
