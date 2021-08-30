@@ -37,6 +37,9 @@ class JoystickEventHandler:
 
             if event.type == SDL_JOYDEVICEADDED:
                 SDL_JoystickOpen( event.jdevice.which )
+                self.logger.debug( joystick.SDL_JoystickGetDeviceProductVersion( event.jdevice.which ))
+                self.logger.debug( joystick.SDL_JoystickGetDeviceProduct( event.jdevice.which ))
+                self.logger.debug( joystick.SDL_JoystickGetDeviceVendor( event.jdevice.which ))
             else:
                 self.mapper.map( event_details )
 

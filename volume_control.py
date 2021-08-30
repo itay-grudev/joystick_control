@@ -27,6 +27,10 @@ class VolumeControl:
             sink = self.__get_sink( sink )
         self.pulse.volume_set_all_chans( sink, level )
 
+    def _mute_microphones( self ):
+        for card in self.pulse.source_list():
+            pass
+
     def __get_sink( self, sink ):
         if type( sink ) is int:
             return self.__get_sink_by_index( sink )
@@ -41,6 +45,9 @@ class VolumeControl:
         return sink
 
     def __get_sink_by_name( self, sink_name ):
+        return self.pulse.get_sink_by_name( sink_name )
+
+    def __get_card_by_name( self, sink_name ):
         return self.pulse.get_sink_by_name( sink_name )
 
     def __default_sink( self ):
