@@ -1,6 +1,5 @@
-
 Joysticks:
-  Joystick0:
+  FlightStick-0738:2221:
     name: Joystick
     buttons:
       0: Trigger
@@ -26,7 +25,7 @@ Joysticks:
     hats:
       0: POV
 
-  Joystick1:
+  Throttle-0738:a221:
     name: Throttle
     buttons:
       0: E

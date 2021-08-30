@@ -1,3 +1,4 @@
+import pdb
 import ctypes
 import logging
 from sdl2 import *
@@ -36,7 +37,6 @@ class JoystickEventHandler:
             self._log_event( event_details )
 
             if event.type == SDL_JOYDEVICEADDED:
-                SDL_JoystickOpen( event.jdevice.which )
                 self.logger.debug( joystick.SDL_JoystickGetDeviceProductVersion( event.jdevice.which ))
                 self.logger.debug( joystick.SDL_JoystickGetDeviceProduct( event.jdevice.which ))
                 self.logger.debug( joystick.SDL_JoystickGetDeviceVendor( event.jdevice.which ))
@@ -47,18 +47,38 @@ class JoystickEventHandler:
         if 0x300 <= event.type < 0x400:
             device = 'Keyboard'
             device_id = None
+            device_type = None
         elif 0x400 <= event.type < 0x600:
             device = 'Mouse'
             device_id = None
+            device_type = None
         elif 0x600 <= event.type < 0x650:
+            device_handler = SDL_JoystickOpen( event.jdevice.which )
             device = 'Joystick'
-            device_id = event.jdevice.which
+            device_id = "%04x:%04x" % (
+                joystick.SDL_JoystickGetDeviceVendor( event.jdevice.which ),
+                joystick.SDL_JoystickGetDeviceProduct( event.jdevice.which ),
+            )
+            device_type = [
+                'Unknown',
+                'Gamecontroller',
+                'Wheel',
+                'Arcade_stick',
+                'Flight_stick',
+                'Dance_pad',
+                'Guitar',
+                'Drum_kit',
+                'Arcade_pad',
+                'Throttle',
+            ][joystick.SDL_JoystickGetType( device_handler )]
         elif 0x650 <= event.type < 0x700:
             device = 'Controller'
             device_id = None
+            device_type = None
         elif 0x700 <= event.type < 0x800:
             device = 'Touchpad'
             device_id = None
+            device_type = None
 
         if event.type == SDL_JOYAXISMOTION:
             trigger_type = 'Slider'
@@ -104,15 +124,15 @@ class JoystickEventHandler:
             event_id = None
             event_value = None
 
-        return (device, device_id, trigger_type, event_type, event_id, event_value)
+        return (device, device_type, device_id, trigger_type, event_type, event_id, event_value)
 
     def _log_event( self, event_details ):
-        (device, device_id, trigger_type, event_type, event_id, event_value) = event_details
+        (device, device_type, device_id, trigger_type, event_type, event_id, event_value) = event_details
 
         if event_id != None:
             if event_value != None:
-                self.logger.debug( "%s = %s" % (AliasResolver.event_alias( event_details ), event_value))
+                self.logger.debug( '%s = %s' % (AliasResolver.event_alias( event_details ), event_value))
             else:
-                self.logger.debug( "%s" % (AliasResolver.event_alias( event_details )))
+                self.logger.debug( '%s' % (AliasResolver.event_alias( event_details )))
         else:
-            self.logger.debug( "%s/%s" % (AliasResolver.device_name_alias( event_details ), trigger_type))
+            self.logger.debug( '%s/%s' % (AliasResolver.device_name_alias( event_details ), trigger_type))
