@@ -1,5 +1,7 @@
+# Logitech X56 (Saitek Pro X-56) Throttle and Flight Stick Controller
+# USB IDs: 0738:2221 0738:a221
 Joysticks:
-  FlightStick-0738:2221:
+  FlightStick-2221:
     name: Joystick
     buttons:
       0: Trigger
@@ -25,7 +27,7 @@ Joysticks:
     hats:
       0: POV
 
-  Throttle-0738:a221:
+  Throttle-a221:
     name: Throttle
     buttons:
       0: E
@@ -71,5 +73,5 @@ Joysticks:
       3: Jx
       4: Jy
       5: GRotary
-      6: Rotary3
-      7: Rotary4
+      6: Rotary4
+      7: Rotary3
