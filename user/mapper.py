@@ -1,11 +1,13 @@
 import logging
 import subprocess
 
-from volume_control import VolumeControl
+from lib.linux.volume_control import VolumeControl
 from alias_resolver import AliasResolver
 
 ##
 # Maps events
+
+
 class Mapper:
     # SINK_HEADPHONES = 'alsa_output.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00.analog-stereo'
     SINK_HEADPHONES = 'alsa_output.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00.stereo-chat'
@@ -35,73 +37,79 @@ class Mapper:
         "Throttle/H3Left#press": "_prev_song",
     }
 
-    def __init__( self ):
-        self.logger = logging.getLogger( __name__ )
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.volume_control = VolumeControl()
 
-    def map( self, event_details ):
-        if AliasResolver.event_alias( event_details ) in self.MAPPING:
-            getattr( self, self.MAPPING[AliasResolver.event_alias( event_details )])( event_details )
+    def map(self, event_details):
+        if AliasResolver.event_alias(event_details) in self.MAPPING:
+            getattr(self, self.MAPPING[AliasResolver.event_alias(event_details)])(
+                event_details)
 
-    def _sink_headphones( self, event_details ):
-        self.volume_control.set_default_sink( self.SINK_HEADPHONES )
-        self.volume_control.move_inputs_to_sink( self.SINK_HEADPHONES )
+    def _sink_headphones(self, event_details):
+        self.volume_control.set_default_sink(self.SINK_HEADPHONES)
+        self.volume_control.move_inputs_to_sink(self.SINK_HEADPHONES)
 
-    def _sink_speakers( self, event_details ):
-        self.volume_control.set_default_sink( self.SINK_SPEAKERS )
-        self.volume_control.move_inputs_to_sink( self.SINK_SPEAKERS )
+    def _sink_speakers(self, event_details):
+        self.volume_control.set_default_sink(self.SINK_SPEAKERS)
+        self.volume_control.move_inputs_to_sink(self.SINK_SPEAKERS)
 
-    def __volume_control( self, event_details):
-        (device, device_type, device_id, trigger_type, event_type, event_id, event_value) = event_details
-        self.volume_control.set_volume( self.__normalize( event_value, -32768, 32767 ))
+    def __volume_control(self, event_details):
+        (device, device_type, vendor_id, product_id, trigger_type,
+         event_type, event_id, event_value) = event_details
+        self.volume_control.set_volume(
+            self.__normalize(event_value, -32768, 32767))
 
-    def _sink_headphones_volume( self, event_details):
-        (device, device_type, device_id, trigger_type, event_type, event_id, event_value) = event_details
-        self.volume_control.set_volume( self.__normalize( event_value, -32768, 32767 ), sink = self.SINK_HEADPHONES )
+    def _sink_headphones_volume(self, event_details):
+        (device, device_type, vendor_id, product_id, trigger_type,
+         event_type, event_id, event_value) = event_details
+        self.volume_control.set_volume(self.__normalize(
+            event_value, -32768, 32767), sink=self.SINK_HEADPHONES)
 
-    def _sink_speakers_volume( self, event_details):
-        (device, device_type, device_id, trigger_type, event_type, event_id, event_value) = event_details
-        self.volume_control.set_volume( self.__normalize( event_value, -32768, 32767 ), sink = self.SINK_SPEAKERS )
+    def _sink_speakers_volume(self, event_details):
+        (device, device_type, vendor_id, product_id, trigger_type,
+         event_type, event_id, event_value) = event_details
+        self.volume_control.set_volume(self.__normalize(
+            event_value, -32768, 32767), sink=self.SINK_SPEAKERS)
 
-    def _lock_pc( self, event_details ):
-        subprocess.Popen(['xdg-screensaver', 'lock'] )
+    def _lock_pc(self, event_details):
+        subprocess.Popen(['xdg-screensaver', 'lock'])
 
-
-    def _mute_microphones( self, event_details):
+    def _mute_microphones(self, event_details):
 	    pass
 
-    def _lollypop_play( self, event_details):
-        subprocess.Popen(['lollypop'] )
+    def _lollypop_play(self, event_details):
+        subprocess.Popen(['lollypop'])
 
-    def _lollypop_toggle( self, event_details):
-        subprocess.Popen(['lollypop', '--play-pause'] )
+    def _lollypop_toggle(self, event_details):
+        subprocess.Popen(['lollypop', '--play-pause'])
 
-    def _terminal_open( self, event_details ):
-        subprocess.Popen(['gnome-terminal'] )
+    def _terminal_open(self, event_details):
+        subprocess.Popen(['gnome-terminal'])
 
-    def _terminal_close( self, event_details ):
-        subprocess.Popen(['xdotool', 'key', 'Control_L+d'] )
+    def _terminal_close(self, event_details):
+        subprocess.Popen(['xdotool', 'key', 'Control_L+d'])
 
-    def _close_slack( self, event_details ):
+    def _close_slack(self, event_details):
         subprocess.Popen(['wmctrl', '-c', 'Slack'])
 
-    def _focus_slack( self, event_details ):
+    def _focus_slack(self, event_details):
         subprocess.Popen(['slack'])
 
-    def _close_gitkraken( self, event_details ):
+    def _close_gitkraken(self, event_details):
         subprocess.Popen(['wmctrl', '-c', 'GitKraken'])
 
-    def _focus_gitkraken( self, event_details ):
+    def _focus_gitkraken(self, event_details):
         subprocess.Popen(['gitkraken'])
         subprocess.Popen(['wmctrl', '-R', 'GitKraken'])
 
-    def _next_song( self, event_details ):
+    def _next_song(self, event_details):
         subprocess.Popen(['lollypop', '--next'])
 
-    def _prev_song( self, event_details ):
+    def _prev_song(self, event_details):
         subprocess.Popen(['lollypop', '--prev'])
 
     # Convert a value from a specified range to 0-1 range (float)
     @staticmethod
-    def __normalize( value, from_min, from_max):
-        return float( value - from_min ) / float( from_max - from_min )
+    def __normalize(value, from_min, from_max):
+        return float(value - from_min) / float(from_max - from_min)
