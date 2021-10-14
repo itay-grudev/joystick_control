@@ -2,39 +2,36 @@ import logging
 import subprocess
 
 from lib.linux.volume_control import VolumeControl
-from alias_resolver import AliasResolver
+from lib.alias_resolver import AliasResolver
 
 ##
 # Maps events
 
 
 class Mapper:
-    # SINK_HEADPHONES = 'alsa_output.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00.analog-stereo'
-    SINK_HEADPHONES = 'alsa_output.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00.stereo-chat'
-    # SINK_SPEAKERS = 'alsa_output.pci-0000_0b_00.4.analog-stereo'
-    SINK_SPEAKERS = 'alsa_output.usb-0b0e_Jabra_Link_380_50C2ED7D7D89-00.iec958-stereo'
-    INPUT_CARDS = [
-        'alsa_card.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00',
-        'alsa_card.usb-0b0e_Jabra_Link_380_50C2ED7D7D89-00',
+    OUTPUT_SINKS = [
+        'alsa_output.pci-0000_09_00.1.hdmi-stereo',
+        'alsa_output.usb-Razer_Razer_Kraken_Tournament_Edition_000000000000000000000000-00.stereo-chat',
+        'alsa_output.usb-0b0e_Jabra_Link_380_50C2ED7D7D89-00.analog-stereo',
     ]
     MAPPING = {
-        "Throttle/Rotary3#change": "_sink_speakers_volume",
-        "Throttle/Rotary4#change": "_sink_headphones_volume",
-        "Throttle/ModeM1#press": "_sink_headphones",
-        "Throttle/ModeM2#press": "_sink_speakers",
-        "Throttle/ModeS1#press": "_mute_microphones",
-        "Throttle/F#press": "_terminal_open",
-        "Throttle/G#press": "_terminal_close",
-        "Throttle/SW1#release": "_close_slack",
-        "Throttle/SW2#release": "_focus_slack",
-        "Throttle/SW3#release": "_close_gitkraken",
-        "Throttle/SW4#release": "_focus_gitkraken",
-        "Throttle/SW5#press": "_lollypop_toggle",
-        "Throttle/SW6#press": "_lollypop_play",
-        "Throttle/TGL4Up#press": "_lock_pc",
+        "Throttle/Rotary4#change": "_volume_control",
+        "Throttle/ModeM1#press":   "_sink_0",
+        "Throttle/ModeM2#press":   "_sink_1",
+        "Throttle/ModeS1#press":   "_sink_2",
+        "Throttle/F#press":        "_terminal_open",
+        "Throttle/G#press":        "_terminal_close",
+        "Throttle/SW1#release":    "_close_slack",
+        "Throttle/SW2#release":    "_focus_slack",
+        "Throttle/SW3#release":    "_close_gitkraken",
+        "Throttle/SW4#release":    "_focus_gitkraken",
+        "Throttle/TGL4Up#press":   "_lock_pc",
         "Throttle/TGL4Down#press": "_lock_pc",
-        "Throttle/H3Right#press": "_next_song",
-        "Throttle/H3Left#press": "_prev_song",
+        "Throttle/SLD#press":      "_lollypop_open",
+        "Throttle/SLD#release":    "_lollypop_close",
+        "Throttle/E#press":        "_lollypop_toggle",
+        "Throttle/H3Right#press":  "_next_song",
+        "Throttle/H3Left#press":   "_prev_song",
     }
 
     def __init__(self):
@@ -46,40 +43,38 @@ class Mapper:
             getattr(self, self.MAPPING[AliasResolver.event_alias(event_details)])(
                 event_details)
 
-    def _sink_headphones(self, event_details):
-        self.volume_control.set_default_sink(self.SINK_HEADPHONES)
-        self.volume_control.move_inputs_to_sink(self.SINK_HEADPHONES)
+    def _sink_0(self, event_details):
+        sink = self.OUTPUT_SINKS[0]
+        self.volume_control.set_default_sink(sink)
+        self.volume_control.move_inputs_to_sink(sink)
 
-    def _sink_speakers(self, event_details):
-        self.volume_control.set_default_sink(self.SINK_SPEAKERS)
-        self.volume_control.move_inputs_to_sink(self.SINK_SPEAKERS)
+    def _sink_1(self, event_details):
+        sink = self.OUTPUT_SINKS[1]
+        self.volume_control.set_default_sink(sink)
+        self.volume_control.move_inputs_to_sink(sink)
 
-    def __volume_control(self, event_details):
+    def _sink_2(self, event_details):
+        sink = self.OUTPUT_SINKS[2]
+        self.volume_control.set_default_sink(sink)
+        self.volume_control.move_inputs_to_sink(sink)
+
+    def _volume_control(self, event_details):
         (device, device_type, vendor_id, product_id, trigger_type,
          event_type, event_id, event_value) = event_details
         self.volume_control.set_volume(
             self.__normalize(event_value, -32768, 32767))
 
-    def _sink_headphones_volume(self, event_details):
-        (device, device_type, vendor_id, product_id, trigger_type,
-         event_type, event_id, event_value) = event_details
-        self.volume_control.set_volume(self.__normalize(
-            event_value, -32768, 32767), sink=self.SINK_HEADPHONES)
-
-    def _sink_speakers_volume(self, event_details):
-        (device, device_type, vendor_id, product_id, trigger_type,
-         event_type, event_id, event_value) = event_details
-        self.volume_control.set_volume(self.__normalize(
-            event_value, -32768, 32767), sink=self.SINK_SPEAKERS)
-
     def _lock_pc(self, event_details):
         subprocess.Popen(['xdg-screensaver', 'lock'])
 
     def _mute_microphones(self, event_details):
-	    pass
+        pass
 
-    def _lollypop_play(self, event_details):
+    def _lollypop_open(self, event_details):
         subprocess.Popen(['lollypop'])
+
+    def _lollypop_close(self, event_details):
+        subprocess.Popen(['wmctrl', '-c', 'Lollypop'])
 
     def _lollypop_toggle(self, event_details):
         subprocess.Popen(['lollypop', '--play-pause'])
