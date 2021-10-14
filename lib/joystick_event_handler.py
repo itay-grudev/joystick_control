@@ -1,17 +1,20 @@
+import sys
 import ctypes
 import logging
+import statistics
 from sdl2 import *
 
 from user.mapper import Mapper
-from alias_resolver import AliasResolver
+from lib.alias_resolver import AliasResolver
+
 
 class JoystickEventHandler:
     stop_thread = False
-    logger = logging.getLogger( __name__ )
+    logger = logging.getLogger(__name__)
 
     @classmethod
-    def run( cls, args ):
-        cls.logger.info( 'Starting (%s).' % cls.__name__ )
+    def run(cls, args):
+        cls.logger.info('Starting (%s).' % cls.__name__)
         while not cls.stop_thread:
             try:
                 event_handler = cls()
@@ -19,26 +22,32 @@ class JoystickEventHandler:
                     try:
                         event_handler.update()
                     except:
-                        cls.logger.exception( 'Exception caught in (%s)' % cls.__name__ )
+                        cls.logger.exception(
+                            'Exception caught in (%s)' % cls.__name__)
             except:
                 # Log the exception ang gracefully restart
-                cls.logger.exception( 'Exception caught in (%s)' % cls.__name__ )
+                cls.logger.exception('Exception caught in (%s)' % cls.__name__)
 
-
-    def __init__( self ):
-        SDL_Init( SDL_INIT_JOYSTICK )
+    def __init__(self):
+        SDL_Init(SDL_INIT_JOYSTICK)
         self.mapper = Mapper()
+        self.filter_memory = {}
 
-    def update( self ):
+    def update(self):
         event = SDL_Event()
-        if SDL_WaitEventTimeout( ctypes.byref( event ), 175 ) == 1:
-            event_details = self._classify_event( event )
-            self._log_event( event_details )
+        if SDL_WaitEventTimeout(ctypes.byref(event), 175) == 1:
+            (drop_event, *event_details) = self._classify_event(event)
+            self._log_event(drop_event, event_details)
+
+            if drop_event:
+                return
 
             if event.type != SDL_JOYDEVICEADDED:
-                self.mapper.map( event_details )
+                self.mapper.map(event_details)
 
-    def _classify_event( self, event ):
+    def _classify_event(self, event):
+        drop_event = False
+
         if 0x300 <= event.type < 0x400:
             device = 'Keyboard'
             vendor_id = None
@@ -50,10 +59,12 @@ class JoystickEventHandler:
             product_id = None
             device_type = None
         elif 0x600 <= event.type < 0x650:
-            device_handler = SDL_JoystickOpen( event.jdevice.which )
+            device_handler = SDL_JoystickOpen(event.jdevice.which)
             device = 'Joystick'
-            vendor_id = "%04x" % joystick.SDL_JoystickGetDeviceVendor( event.jdevice.which )
-            product_id = "%04x" % joystick.SDL_JoystickGetDeviceProduct( event.jdevice.which )
+            vendor_id = "%04x" % joystick.SDL_JoystickGetDeviceVendor(
+                event.jdevice.which)
+            product_id = "%04x" % joystick.SDL_JoystickGetDeviceProduct(
+                event.jdevice.which)
             device_type = [
                 'Unknown',
                 'Gamecontroller',
@@ -65,7 +76,7 @@ class JoystickEventHandler:
                 'Drum_kit',
                 'Arcade_pad',
                 'Throttle',
-            ][joystick.SDL_JoystickGetType( device_handler )]
+            ][joystick.SDL_JoystickGetType(device_handler)]
         elif 0x650 <= event.type < 0x700:
             device = 'Controller'
             vendor_id = None
@@ -82,6 +93,21 @@ class JoystickEventHandler:
             event_type = 'change'
             event_id = event.jaxis.axis
             event_value = event.jaxis.value
+            # Anti-jitter filter
+            prev_values = (
+                self.filter_memory
+                .setdefault(vendor_id, {})
+                .setdefault(product_id, {})
+                .setdefault(event.jaxis.axis, [])
+            )
+            if len(prev_values) > 1:  # You cannot calculate stddev on less than 2 values
+                # Check if the moving average of the last val
+                avg = sum(prev_values) / len(prev_values)
+                if abs(avg - event_value) - statistics.stdev(prev_values) * 1.5 < 0:
+                    drop_event = True
+            prev_values.append(event_value)
+            if len(prev_values) > 10:
+                prev_values.pop(0)
         elif event.type == SDL_JOYBUTTONDOWN:
             trigger_type = 'Button'
             event_type = 'press'
@@ -121,15 +147,36 @@ class JoystickEventHandler:
             event_id = None
             event_value = None
 
-        return (device, device_type, vendor_id, product_id, trigger_type, event_type, event_id, event_value)
+        return (drop_event, device, device_type, vendor_id, product_id, trigger_type, event_type, event_id, event_value)
 
-    def _log_event( self, event_details ):
-        (device, device_type, vendor_id, product_id, trigger_type, event_type, event_id, event_value) = event_details
+    def _log_event(self, drop_event, event_details):
+        (device, device_type, vendor_id, product_id, trigger_type,
+         event_type, event_id, event_value) = event_details
+
+        prefix = ''
+        if drop_event:
+            prefix = '[DROPPED] '
 
         if event_id != None:
             if event_value != None:
-                self.logger.debug( '%s = %s' % (AliasResolver.event_alias( event_details ), event_value))
+                self.logger.debug('%s%s = %s' % (
+                        prefix,
+                        AliasResolver.event_alias(event_details),
+                        event_value
+                    )
+                )
             else:
-                self.logger.debug( '%s' % (AliasResolver.event_alias( event_details )))
+                self.logger.debug(
+                    '%s%s' % (
+                        prefix,
+                        AliasResolver.event_alias(event_details)
+                    )
+                )
         else:
-            self.logger.debug( '%s/%s' % (AliasResolver.device_name_alias( event_details ), trigger_type))
+            self.logger.debug(
+                '%s%s/%s' % (
+                    prefix,
+                    AliasResolver.device_name_alias(event_details),
+                    trigger_type
+                )
+            )
